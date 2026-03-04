@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Конвертер</title>
+    <style>
+        /* Абсолютный минимум стилей. Только самое важное. */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            color: #111111;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            margin-bottom: 2rem;
+            color: #000;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 2rem;
+        }
+
+        input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.1s;
+            background: #ffffff;
+        }
+
+        input:focus {
+            border-color: #888;
+        }
+
+        input::placeholder {
+            color: #aaa;
+            font-weight: 300;
+        }
+
+        button {
+            padding: 14px 24px;
+            background: #000000;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 400;
+            cursor: pointer;
+            transition: opacity 0.1s;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        /* Контейнер для результата */
+        .qr-result {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #f0f0f0;
+            border-radius: 12px;
+            background: #fafafa;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease;
+        }
+
+        .qr-result.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .qr-result img {
+            max-width: 200px;
+            width: 100%;
+            height: auto;
+            margin-bottom: 15px;
+            border: none;
+        }
+
+        .qr-result p {
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+
+        .download-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background: none;
+            color: #000;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.1s;
+        }
+
+        .download-btn:hover {
+            background: #f0f0f0;
+            border-color: #999;
+        }
+
+        footer {
+            margin-top: 3rem;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>QR код</h1>
+
+        <div class="input-group">
+            <input 
+                type="url" 
+                id="linkInput" 
+                placeholder="https://example.com" 
+                required
+            >
+            <button id="generateBtn">Создать</button>
+        </div>
+
+        <!-- Блок с результатом (изначально скрыт) -->
+        <div class="qr-result" id="qrResultBlock">
+            <img id="qrImage" src="" alt="QR Code">
+            <p id="shortLink"></p>
+            <a id="downloadLink" class="download-btn" download="qrcode.png">Скачать PNG</a>
+        </div>
+
+        <footer>
+            минимум символов — максимум смысла
+        </footer>
+    </div>
+
+    <script>
+
+        function generateQR() {
+            const input = document.getElementById('linkInput');
+            const url = input.value.trim();
+            const resultBlock = document.getElementById('qrResultBlock');
+            const qrImage = document.getElementById('qrImage');
+            const shortLink = document.getElementById('shortLink');
+            const downloadLink = document.getElementById('downloadLink');
+
+  
+            if (!url) {
+                alert('Вставьте ссылку');
+                return;
+            }
+
+      
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+              
+                if (url.includes('.') && !url.includes(' ')) {
+                    // скорее всего забыли протокол
+                    var fixedUrl = 'https://' + url;
+                    input.value = fixedUrl;
+                    generateQR(); // рекурсивно вызываем заново с исправленной ссылкой
+                    return;
+                } else {
+                    alert('Пожалуйста, введите корректный URL (например, https://example.com)');
+                    return;
+                }
+            }
+
+           
+            const encodedUrl = encodeURIComponent(url);
+            
+         
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedUrl}`;
+            
+
+            qrImage.src = qrCodeUrl;
+            
+         
+            shortLink.textContent = url.length > 50 ? url.substring(0, 50) + '...' : url;
+            
+          
+            
+           
+            fetch(qrCodeUrl)
+                .then(response => response.blob())
+                .then(blob => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    downloadLink.href = blobUrl;
+                   
+                })
+                .catch(() => {
+                
+                    downloadLink.href = '#';
+                });
+            
+       
+            resultBlock.classList.add('active');
+        }
+
+ 
+        document.getElementById('generateBtn').addEventListener('click', generateQR);
+
+    
+        document.getElementById('linkInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generateQR();
+            }
+        });
+
+     
+        document.getElementById('linkInput').addEventListener('focus', function() {
+            const resultBlock = document.getElementById('qrResultBlock');
+       
+        });
+    </script>
+</body>
+</html>
